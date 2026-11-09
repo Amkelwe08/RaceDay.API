@@ -1,0 +1,43 @@
+services:
+  api:
+    container_name: raceday-api
+    build:
+      context: .
+      dockerfile: RaceDay.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      RACEDAY_USE_HTTPS_REDIRECTION: "false"
+      AzureBlobStorage__ConnectionString: ${RACEDAY_BLOB_CONNECTION_STRING:-}
+      AzureBlobStorage__ContainerName: ${RACEDAY_BLOB_CONTAINER_NAME:-raceday-images}
+      ConnectionStrings__DefaultConnection: ${RACEDAY_DB_CONNECTION:-Server=host.docker.internal,1433;Database=RaceDayDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;}
+    ports:
+      - "5200:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "test -e /proc/1/cmdline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mvc:
+    container_name: raceday-mvc
+    build:
+      context: .
+      dockerfile: RaceDay.Mvc/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      RACEDAY_USE_HTTPS_REDIRECTION: "false"
+      ApiSettings__BaseUrl: http://api:8080/
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5000:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "test -e /proc/1/cmdline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
