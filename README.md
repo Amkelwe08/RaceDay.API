@@ -1,222 +1,93 @@
-# RaceDay - Event Management System
+# RaceDay
 
-## 1. Project Overview
+RaceDay is a .NET 8 solution containing the API, shared contracts, MVC website, and API tests.
 
-RaceDay is a web-based event management system developed using ASP.NET Core MVC and ASP.NET Core Web API.
+## Run locally before Docker
 
-The system is designed to manage race-style sporting events such as marathons, trail runs and cycling events.
+Docker adds a networking and packaging layer. First confirm that the application works normally:
 
-RaceDay provides two main user roles:
+1. Start `RaceDay.Api` from Visual Studio or a terminal.
+2. Start `RaceDay.Mvc` normally.
+3. Register or log in through the MVC website.
+4. Confirm the role-aware navigation.
+5. Open an authorised Organiser or Participant page.
+6. Confirm that at least one API-backed data operation succeeds.
 
-- **Organisers:** Can create and manage events, manage categories, view participant enrolments and capture race results.
-- **Participants:** Can browse events, register for categories, view their enrolments and access their race results.
+## Docker: RaceDay.Mvc
 
-The system aims to make race event management easier by providing a central platform for organisers and participants.
+Build the MVC image from the solution root, where `RaceDay.Mvc` and `RaceDay.Contracts` are available to the Docker build context:
 
-## 2. Project Objectives
-
-The main objectives of RaceDay are to:
-
-- Provide an online platform for managing race events.
-- Allow organisers to create, update and manage events.
-- Allow participants to browse and enrol in events.
-- Manage event categories and participant enrolments.
-- Record and display race results.
-- Provide secure authentication and role-based access.
-- Use an API-based architecture to separate the user interface from backend operations.
-
-## 3. Main Features
-
-### Organiser Features
-- Organiser registration and login.
-- Organiser dashboard.
-- Create, view, update and delete events.
-- Manage event categories.
-- View participant enrolments.
-- Update enrolment statuses.
-- Capture participant results.
-
-### Participant Features
-- Participant registration and login.
-- Browse available events.
-- View event details.
-- Enrol in event categories.
-- View personal enrolments.
-- View race results.
-- Manage profile information.
-
-### General Features
-- Role-based navigation and access control.
-- Form validation.
-- Session-based authentication.
-- API communication between MVC and Web API.
-- SQL Server database integration.
-
-## 4. Technologies Used
-
-| Technology | Purpose |
-|---|---|
-| C# | Main programming language |
-| .NET 8 | Application framework |
-| ASP.NET Core MVC | Website and user interface |
-| ASP.NET Core Web API | Backend services |
-| SQL Server | Database management |
-| Entity Framework Core | Database access |
-| Swagger | API documentation and testing |
-| Visual Studio 2022 | Development environment |
-| Git and GitHub | Version control |
-| Docker | Application containerisation |
-| GitHub Actions | Automated build and testing |
-
-## 5. System Architecture
-
-RaceDay uses a separated MVC and API architecture.
-
-The MVC application handles the user interface and sends HTTP requests to the Web API.
-
-The API processes requests, applies application logic and communicates with the SQL Server database.
-
-**Application flow:**
-
-Browser → RaceDay.Mvc → RaceDay.Api → SQL Server
-
-The MVC project does not connect directly to the database.
-
-## 6. Database Structure
-
-The original RaceDay database design consists of six main tables:
-
-| Table | Description |
-|---|---|
-| Roles | Stores user roles |
-| Users | Stores user account information |
-| Events | Stores race event information |
-| Categories | Stores event categories |
-| Enrolments | Stores participant registrations |
-| Results | Stores race results |
-
-The database uses primary keys and foreign keys to maintain relationships between records.
-
-## 7. Solution Structure
-
-The solution contains four main projects:
-
-```text
-RaceDay.API.slnx
-│
-├── RaceDay.Api
-│   ├── Controllers
-│   ├── Data
-│   ├── Models
-│   ├── Services
-│   └── Program.cs
-│
-├── RaceDay.Contracts
-│   └── DTOs
-│
-├── RaceDay.Mvc
-│   ├── Controllers
-│   ├── Views
-│   ├── ViewModels
-│   ├── Services
-│   ├── wwwroot
-│   └── Program.cs
-│
-└── RaceDay.Api.Tests
-    └── Integration tests
+```powershell
+docker build -f RaceDay.Mvc/Dockerfile -t raceday-mvc:part3 .
 ```
 
-## 8. Requirements
+Start the API on the Windows host before starting the MVC container:
 
-To run the project locally, the following software is required:
-
-- Visual Studio 2022.
-- .NET 8 SDK.
-- SQL Server LocalDB.
-- SQL Server Management Studio (SSMS), recommended for database management.
-- Git, if cloning the repository.
-
-## 9. Database Configuration
-
-The application uses SQL Server.
-
-For local development, the connection string should point to the LocalDB instance.
-
-Example:
-
-```json
-{
-  "ConnectionStrings": {
-    "RaceDayDb": "Server=(localdb)\\MSSQLLocalDB;Database=RaceDayDB;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
-  }
-}
+```powershell
+dotnet run --project RaceDay.Api --urls http://0.0.0.0:5000
 ```
 
-Ensure that the database exists and that the connection string matches the configuration expected by the API.
+If Swagger is enabled, check the host API at <http://localhost:5000/swagger> before continuing.
 
-Do not commit real passwords, secrets or production connection details to GitHub.
+Run the MVC container and override its API URL for Docker networking:
 
-## 10. Running the Application
-
-1. Clone or download the repository.
-2. Open `RaceDay.API.slnx` in Visual Studio 2022.
-3. Restore NuGet packages.
-4. Check the SQL Server connection string.
-5. Ensure the database is available.
-6. Configure Visual Studio to start both `RaceDay.Api` and `RaceDay.Mvc`.
-7. Run the solution.
-
-The API Swagger page can be used to inspect and test available API endpoints.
-
-The MVC application can be accessed through the browser using its configured launch URL.
-
-## 11. Running Automated Tests
-
-The solution includes a test project named `RaceDay.Api.Tests`.
-
-To run tests in Visual Studio:
-
-1. Open Test Explorer.
-2. Build the solution.
-3. Select Run All Tests.
-4. Review the passed and failed tests.
-
-Alternatively, use:
-
-```bash
-dotnet test
+```powershell
+docker run -d --name raceday-mvc -p 8080:8080 -e ApiSettings__BaseUrl=http://host.docker.internal:5000/ raceday-mvc:part3
 ```
 
-## 12. Docker
+Open the MVC website at <http://localhost:8080>.
 
-RaceDay includes Docker configuration for containerising the MVC and API applications.
+Inside the container, `localhost` refers to the MVC container itself. `host.docker.internal` is required to reach the API running on the Windows host. Test the same login, role navigation, API data display, and data-changing operation that worked locally. Stop the normal MVC debugging session while leaving the container running to confirm that Docker is serving the website.
 
-The Docker Compose configuration is used to manage the application services.
+## Inspect, stop, and restart
 
-Before running Docker, ensure that:
+Useful diagnostic commands:
 
-- Docker Desktop is installed and running.
-- The Dockerfiles are configured correctly.
-- The API URL used by MVC is correct for the Docker network.
-- The API can connect to the configured SQL Server instance.
-
-Run the application using:
-
-```bash
-docker compose up --build
+```powershell
+docker ps
+docker logs raceday-mvc
+docker stop raceday-mvc
+docker rm raceday-mvc
 ```
 
-To stop the containers:
+Press `Ctrl+C` to stop following `docker logs -f`; this does not stop the container.
 
-```bash
-docker compose down
+## Rebuild after source changes
+
+An existing image contains the code from the time it was built. Rebuild and recreate the container after changing C# or Razor files:
+
+```powershell
+docker stop raceday-mvc
+docker rm raceday-mvc
+docker build -f RaceDay.Mvc/Dockerfile -t raceday-mvc:part3 .
+docker run -d --name raceday-mvc -p 8080:8080 -e ApiSettings__BaseUrl=http://host.docker.internal:5000/ raceday-mvc:part3
 ```
 
-Examples may include:
+## Verification status
 
-- Azure Blob Storage integration, if not yet completed.
-- Docker deployment, if not yet verified.
-- Features that still require browser testing.
+The standalone MVC workflow has been verified locally: the image `raceday-mvc:part3` built successfully, the `raceday-mvc` container started with port mapping `0.0.0.0:8080->8080/tcp`, and `http://localhost:8080` returned HTTP 200. API-backed login and data operations still require the API to be running on the Windows host at `http://0.0.0.0:5000` and must be tested separately.
 
-Update this section before final submission to accurately reflect the final application.
+The complete solution still has unrelated source compilation blockers in the API test contract alignment and `EnrolmentsController` relationship code. These do not prevent the MVC project from building or the standalone MVC container from serving its home page.
 
+The repository also contains a separate two-service Compose setup. It uses `http://api:8080/` for MVC-to-API communication and is not the same as this standalone workflow, where MVC uses `http://host.docker.internal:5000/`. See [Docker-Troubleshooting.md](Docker-Troubleshooting.md) for diagnostic steps and database connectivity requirements.
+
+## Azure Blob Storage image configuration
+
+Image uploads always go through `RaceDay.Api`; `RaceDay.Mvc` never connects directly to Azure Storage. Supply the API settings through user secrets, environment variables, or an approved secret store. Do not commit a real connection string.
+
+For local development, user secrets are preferred:
+
+```powershell
+dotnet user-secrets --project RaceDay.Api init
+dotnet user-secrets --project RaceDay.Api set "AzureBlobStorage:ConnectionString" "<storage-connection-string>"
+dotnet user-secrets --project RaceDay.Api set "AzureBlobStorage:ContainerName" "raceday-images"
+```
+
+For Docker or another hosted environment, use an environment variable instead:
+
+```powershell
+$env:AzureBlobStorage__ConnectionString = "<storage-connection-string>"
+$env:AzureBlobStorage__ContainerName = "raceday-images"
+```
+
+For Azure-hosted deployments, prefer managed identity with the Storage Blob Data Contributor role and a token-based BlobServiceClient rather than a long-lived account key. Raw blob URLs are only directly displayable when storage access allows it; private storage requires an approved API download or signed-access design.
